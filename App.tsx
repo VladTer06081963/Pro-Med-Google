@@ -157,36 +157,55 @@ function App() {
         
         {/* Search Form */}
         <div className="mb-10">
-          <div className="flex gap-3">
-            <form onSubmit={handleSearch} className="flex-1 relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+          <div className="space-y-4">
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-4 flex items-start pt-4 pointer-events-none">
                 <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-indigo-500 transition-colors" />
               </div>
-              <input
-                type="text"
-                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all"
+              <textarea
+                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all resize-none min-h-[60px]"
                 placeholder="Введите запрос на русском (например: влияние кофе на сердце)..."
                 value={searchState.query}
                 onChange={(e) => setSearchState(prev => ({ ...prev, query: e.target.value }))}
+                rows={2}
+                style={{ height: 'auto', minHeight: '60px' }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement;
+                  target.style.height = 'auto';
+                  target.style.height = Math.min(target.scrollHeight, 120) + 'px';
+                }}
               />
-              <button
-                type="submit"
-                disabled={searchState.loading}
-                className="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white px-6 rounded-xl font-medium transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                {searchState.loading ? 'Поиск...' : 'Найти'}
-              </button>
-            </form>
-            {searchState.query && (
+            </div>
+            <div className="flex gap-3 justify-end">
+              {searchState.query && (
+                <button
+                  type="button"
+                  onClick={handleClearSearch}
+                  className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-xl font-medium transition-colors"
+                  aria-label="Clear search"
+                >
+                  Очистить
+                </button>
+              )}
               <button
                 type="button"
-                onClick={handleClearSearch}
-                className="p-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl transition-colors"
-                aria-label="Clear search"
+                onClick={handleSearch}
+                disabled={searchState.loading}
+                className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white rounded-xl font-medium transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
               >
-                <XCircleIcon className="h-5 w-5" />
+                {searchState.loading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Поиск...
+                  </>
+                ) : (
+                  <>
+                    <SearchIcon className="h-4 w-4" />
+                    Найти
+                  </>
+                )}
               </button>
-            )}
+            </div>
           </div>
         </div>
 
