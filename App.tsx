@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SearchIcon, SparklesIcon, SettingsIcon, FileTextIcon, ExternalLinkIcon, MoonIcon, SunIcon } from './components/Icon';
+import { SearchIcon, SparklesIcon, SettingsIcon, FileTextIcon, ExternalLinkIcon, MoonIcon, SunIcon, XCircleIcon } from './components/Icon';
 import { PubMedArticle, SearchState } from './types';
 import { searchPubMedArticles } from './services/pubmed';
 import { translateTitlesToRussian, translateQueryToEnglish } from './services/ai';
@@ -41,10 +41,10 @@ function App() {
 
       // 1. Fetch from PubMed
       const articles = await searchPubMedArticles(englishQuery, searchState.count, pubmedApiKey);
-      
+
       // Update state immediately with raw articles to show something
-      setSearchState(prev => ({ 
-        ...prev, 
+      setSearchState(prev => ({
+        ...prev,
         results: articles,
       }));
 
@@ -52,28 +52,37 @@ function App() {
       if (articles.length > 0) {
         const titles = articles.map(a => a.title);
         const translatedTitles = await translateTitlesToRussian(titles);
-        
+
         const translatedArticles = articles.map((article, index) => ({
           ...article,
           titleTranslated: translatedTitles[index]
         }));
 
-        setSearchState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          results: translatedArticles 
+        setSearchState(prev => ({
+          ...prev,
+          loading: false,
+          results: translatedArticles
         }));
       } else {
         setSearchState(prev => ({ ...prev, loading: false }));
       }
 
     } catch (err: any) {
-      setSearchState(prev => ({ 
-        ...prev, 
-        loading: false, 
-        error: err.message || 'Произошла ошибка при поиске' 
+      setSearchState(prev => ({
+        ...prev,
+        loading: false,
+        error: err.message || 'Произошла ошибка при поиске'
       }));
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchState(prev => ({
+      ...prev,
+      query: '',
+      results: [],
+      error: null
+    }));
   };
 
   return (
@@ -148,25 +157,37 @@ function App() {
         
         {/* Search Form */}
         <div className="mb-10">
-          <form onSubmit={handleSearch} className="relative group">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-indigo-500 transition-colors" />
-            </div>
-            <input
-              type="text"
-              className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all"
-              placeholder="Введите запрос на русском (например: влияние кофе на сердце)..."
-              value={searchState.query}
-              onChange={(e) => setSearchState(prev => ({ ...prev, query: e.target.value }))}
-            />
-            <button 
-              type="submit" 
-              disabled={searchState.loading}
-              className="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white px-6 rounded-xl font-medium transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {searchState.loading ? 'Поиск...' : 'Найти'}
-            </button>
-          </form>
+          <div className="flex gap-3">
+            <form onSubmit={handleSearch} className="flex-1 relative group">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                <SearchIcon className="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-indigo-500 transition-colors" />
+              </div>
+              <input
+                type="text"
+                className="w-full pl-12 pr-4 py-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm text-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/20 dark:focus:ring-indigo-500/10 focus:border-indigo-500 dark:focus:border-indigo-500 transition-all"
+                placeholder="Введите запрос на русском (например: влияние кофе на сердце)..."
+                value={searchState.query}
+                onChange={(e) => setSearchState(prev => ({ ...prev, query: e.target.value }))}
+              />
+              <button
+                type="submit"
+                disabled={searchState.loading}
+                className="absolute right-2 top-2 bottom-2 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 text-white px-6 rounded-xl font-medium transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {searchState.loading ? 'Поиск...' : 'Найти'}
+              </button>
+            </form>
+            {searchState.query && (
+              <button
+                type="button"
+                onClick={handleClearSearch}
+                className="p-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-2xl transition-colors"
+                aria-label="Clear search"
+              >
+                <XCircleIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Results */}
