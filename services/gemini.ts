@@ -1,0 +1,108 @@
+import { GoogleGenAI, Type } from "@google/genai";
+
+// Ensure API Key exists
+const apiKey = process.env.API_KEY;
+if (!apiKey) {
+  console.error("API_KEY environment variable is missing.");
+}
+
+const ai = new GoogleGenAI({ apiKey: apiKey || 'dummy-key-to-prevent-crash-if-missing' });
+
+/**
+ * Translates a search query from Russian (or any language) to English for PubMed.
+ */
+export const translateQueryToEnglish = async (query: string): Promise<string> => {
+  if (!apiKey) return query;
+
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = `Translate the following medical search query into English for a PubMed database search. 
+    If the query is already in English, return it exactly as is.
+    Return ONLY the English translation, no other text or explanation.
+    
+    Query: "${query}"`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || query;
+  } catch (error) {
+    console.error("Query translation error:", error);
+    return query;
+  }
+};
+
+/**
+ * Translates a list of titles to Russian using Gemini.
+ */
+export const translateTitlesToRussian = async (titles: string[]): Promise<string[]> => {
+  if (!apiKey || titles.length === 0) return titles;
+
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = `Translate the following medical article titles from English to Russian. 
+    Return ONLY a JSON array of strings corresponding to the order of the input.
+    Input: ${JSON.stringify(titles)}`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.ARRAY,
+          items: { type: Type.STRING }
+        }
+      }
+    });
+
+    const jsonText = response.text;
+    if (!jsonText) return titles;
+
+    const translatedTitles = JSON.parse(jsonText);
+    if (Array.isArray(translatedTitles) && translatedTitles.length === titles.length) {
+      return translatedTitles;
+    }
+    return titles;
+  } catch (error) {
+    console.error("Translation error:", error);
+    return titles; // Fallback to original
+  }
+};
+
+/**
+ * Summarizes a medical abstract for a layperson in Russian.
+ */
+export const summarizeArticleForLayperson = async (title: string, abstract: string): Promise<string> => {
+  if (!apiKey) return "API Key is missing. Cannot generate summary.";
+
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = `You are a helpful medical assistant. 
+    Your task is to explain the following medical scientific article to a simple person (non-medical expert) in Russian.
+    
+    Rules:
+    1. **Output Language**: Russian (Русский).
+    2. Use simple, clear language. Avoid complex terminology where possible, or explain it.
+    3. Focus on the main conclusion: What did they find? Why is it important?
+    4. Structure the response with clear paragraphs or bullet points.
+    5. Be concise but informative.
+    6. Do not make up facts. Stick to the abstract provided.
+
+    Article Title: ${title}
+    Abstract: ${abstract}
+    `;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+    });
+
+    return response.text || "Не удалось создать краткое содержание.";
+  } catch (error) {
+    console.error("Summarization error:", error);
+    return "Произошла ошибка при генерации описания.";
+  }
+};

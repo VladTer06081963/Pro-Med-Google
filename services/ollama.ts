@@ -1,0 +1,168 @@
+/**
+ * Ollama AI Service
+ * Local LLM integration using Ollama API
+ */
+
+// Ollama configuration
+const OLLAMA_BASE_URL = import.meta.env.VITE_OLLAMA_BASE_URL || 'http://192.168.50.64:11434';
+const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'gpt-oss:20b-cloud';
+console.log('OLLAMA_BASE_URL', OLLAMA_BASE_URL);
+console.log('OLLAMA_MODEL', OLLAMA_MODEL);
+
+/**
+ * Check if Ollama is available
+ */
+const checkOllamaConnection = async (): Promise<boolean> => {
+  try {
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * Make a request to Ollama API
+ */
+const ollamaRequest = async (messages: Array<{role: string, content: string}>): Promise<string> => {
+  try {
+    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        messages: messages,
+        stream: false,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.message?.content || '';
+  } catch (error) {
+    console.error('Ollama request error:', error);
+    throw error;
+  }
+};
+
+/**
+ * Translates a search query from Russian (or any language) to English for PubMed.
+ */
+export const translateQueryToEnglish = async (query: string): Promise<string> => {
+  try {
+    // Check if Ollama is running
+    const isAvailable = await checkOllamaConnection();
+    if (!isAvailable) {
+      console.warn('Ollama is not available, returning original query');
+      return query;
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that translates medical search queries to English for PubMed database searches. Return ONLY the English translation, no other text or explanation.'
+      },
+      {
+        role: 'user',
+        content: `Translate the following medical search query into English for a PubMed database search. If the query is already in English, return it exactly as is. Return ONLY the English translation, no other text or explanation.\n\nQuery: "${query}"`
+      }
+    ];
+
+    const response = await ollamaRequest(messages);
+    return response.trim() || query;
+  } catch (error) {
+    console.error("Query translation error:", error);
+    return query; // Fallback to original query
+  }
+};
+
+/**
+ * Translates a list of titles to Russian using Ollama.
+ */
+export const translateTitlesToRussian = async (titles: string[]): Promise<string[]> => {
+  try {
+    // Check if Ollama is running
+    const isAvailable = await checkOllamaConnection();
+    if (!isAvailable) {
+      console.warn('Ollama is not available, returning original titles');
+      return titles;
+    }
+
+    if (titles.length === 0) return titles;
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful assistant that translates medical article titles from English to Russian. Return ONLY a JSON array of strings corresponding to the order of the input titles.'
+      },
+      {
+        role: 'user',
+        content: `Translate the following medical article titles from English to Russian. Return ONLY a JSON array of strings corresponding to the order of the input.\n\nInput: ${JSON.stringify(titles)}`
+      }
+    ];
+
+    const response = await ollamaRequest(messages);
+    const jsonText = response.trim();
+
+    try {
+      const translatedTitles = JSON.parse(jsonText);
+      if (Array.isArray(translatedTitles) && translatedTitles.length === titles.length) {
+        return translatedTitles;
+      }
+    } catch (parseError) {
+      console.error('Failed to parse Ollama response as JSON:', parseError);
+    }
+
+    return titles; // Fallback to original titles
+  } catch (error) {
+    console.error("Title translation error:", error);
+    return titles; // Fallback to original
+  }
+};
+
+/**
+ * Summarizes a medical abstract for a layperson in Russian.
+ */
+export const summarizeArticleForLayperson = async (title: string, abstract: string): Promise<string> => {
+  try {
+    // Check if Ollama is running
+    const isAvailable = await checkOllamaConnection();
+    if (!isAvailable) {
+      return "Локальный ИИ (Ollama) недоступен. Проверьте, запущен ли Ollama сервер.";
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a helpful medical assistant. Your task is to explain medical scientific articles to simple people (non-medical experts) in Russian. Use simple, clear language. Focus on the main conclusion. Be concise but informative.'
+      },
+      {
+        role: 'user',
+        content: `You are a helpful medical assistant. Your task is to explain the following medical scientific article to a simple person (non-medical expert) in Russian.
+
+Rules:
+1. **Output Language**: Russian (Русский).
+2. Use simple, clear language. Avoid complex terminology where possible, or explain it.
+3. Focus on the main conclusion: What did they find? Why is it important?
+4. Structure the response with clear paragraphs or bullet points.
+5. Be concise but informative.
+6. Do not make up facts. Stick to the abstract provided.
+
+Article Title: ${title}
+Abstract: ${abstract}`
+      }
+    ];
+
+    const response = await ollamaRequest(messages);
+    return response || "Не удалось создать краткое содержание.";
+  } catch (error) {
+    console.error("Summarization error:", error);
+    return "Произошла ошибка при генерации описания.";
+  }
+};

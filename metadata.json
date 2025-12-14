@@ -1,0 +1,5 @@
+{
+  "name": "PubMed AI Explorer",
+  "description": "Search PubMed for medical articles, translate titles to Russian, and get simplified AI-generated summaries for non-experts.",
+  "requestFramePermissions": []
+}
