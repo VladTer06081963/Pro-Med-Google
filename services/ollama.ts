@@ -127,6 +127,88 @@ export const translateTitlesToRussian = async (titles: string[]): Promise<string
 };
 
 /**
+ * Optimizes a long query into concise PubMed-compatible search terms.
+ */
+export const optimizeQueryForPubMed = async (longQuery: string): Promise<string> => {
+  try {
+    // Check if Ollama is running
+    const isAvailable = await checkOllamaConnection();
+    if (!isAvailable) {
+      // Fallback: extract key terms manually
+      return extractKeyTermsManually(longQuery);
+    }
+
+    const messages = [
+      {
+        role: 'system',
+        content: 'You are a medical research assistant. Your task is to optimize long, detailed queries into concise PubMed search terms. Focus on the core medical concepts, diseases, treatments, and key terms that would yield the best search results.'
+      },
+      {
+        role: 'user',
+        content: `Please optimize this medical query for PubMed search. Extract the key medical terms, diseases, treatments, and concepts. Make it concise but comprehensive.
+
+Original query: "${longQuery}"
+
+Rules:
+1. Focus on medical keywords, diseases, treatments, symptoms, and research topics
+2. Use PubMed-compatible syntax when appropriate (AND, OR, NOT)
+3. Keep it under 200 characters if possible
+4. Return ONLY the optimized search query, no explanations
+
+Optimized query:`
+      }
+    ];
+
+    const response = await ollamaRequest(messages);
+    const optimized = response.trim();
+
+    // Validate the response isn't too long or empty
+    if (optimized.length > 300) {
+      return extractKeyTermsManually(longQuery);
+    }
+
+    return optimized || extractKeyTermsManually(longQuery);
+  } catch (error) {
+    console.error("Query optimization error:", error);
+    return extractKeyTermsManually(longQuery);
+  }
+};
+
+/**
+ * Fallback function to extract key terms manually when AI is unavailable.
+ */
+const extractKeyTermsManually = (query: string): string => {
+  // Simple extraction of potential medical terms
+  // Remove common words and keep terms that look like medical keywords
+  const words = query.toLowerCase()
+    .replace(/[^\w\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 2)
+    .filter(word =>
+      !['что', 'как', 'для', 'при', 'после', 'перед', 'между', 'через', 'над', 'под', 'или', 'and', 'the', 'for', 'with', 'from', 'into', 'this', 'that', 'these', 'those'].includes(word)
+    );
+
+  // Take first 10 significant words
+  const keyTerms = words.slice(0, 10);
+
+  // If we have too many terms, prioritize medical-sounding ones
+  const medicalTerms = keyTerms.filter(term =>
+    term.includes('ит') ||
+    term.includes('ов') ||
+    term.includes('ин') ||
+    term.includes('он') ||
+    term.includes('pat') ||
+    term.includes('med') ||
+    term.includes('dis') ||
+    term.includes('trea') ||
+    term.includes('stud') ||
+    term.length > 6
+  );
+
+  return medicalTerms.length > 0 ? medicalTerms.join(' ') : keyTerms.slice(0, 5).join(' ');
+};
+
+/**
  * Summarizes a medical abstract for a layperson in Russian.
  */
 export const summarizeArticleForLayperson = async (title: string, abstract: string): Promise<string> => {

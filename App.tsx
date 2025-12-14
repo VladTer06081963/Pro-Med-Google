@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { SearchIcon, SparklesIcon, SettingsIcon, FileTextIcon, ExternalLinkIcon, MoonIcon, SunIcon, XCircleIcon } from './components/Icon';
 import { PubMedArticle, SearchState } from './types';
 import { searchPubMedArticles } from './services/pubmed';
-import { translateTitlesToRussian, translateQueryToEnglish } from './services/ai';
+import { translateTitlesToRussian, translateQueryToEnglish, optimizeQueryForPubMed } from './services/ai';
 import { ArticleModal } from './components/ArticleModal';
 
 function App() {
@@ -35,9 +35,20 @@ function App() {
     setSearchState(prev => ({ ...prev, loading: true, error: null, results: [] }));
 
     try {
+      let searchQuery = searchState.query.trim();
+
+      // Check if query needs optimization (long queries or multiple sentences)
+      const needsOptimization = searchQuery.length > 100 || searchQuery.split(/[.!?]+/).length > 2;
+
+      if (needsOptimization) {
+        console.log('Optimizing long query for PubMed...');
+        searchQuery = await optimizeQueryForPubMed(searchQuery);
+        console.log('Optimized query:', searchQuery);
+      }
+
       // 0. Translate Query to English for PubMed compatibility
-      // PubMed works best with English terms. We silently translate the user's Russian query.
-      const englishQuery = await translateQueryToEnglish(searchState.query);
+      // PubMed works best with English terms. We translate the optimized query.
+      const englishQuery = await translateQueryToEnglish(searchQuery);
 
       // 1. Fetch from PubMed
       const articles = await searchPubMedArticles(englishQuery, searchState.count, pubmedApiKey);

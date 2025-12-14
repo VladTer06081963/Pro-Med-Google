@@ -8,5 +8,6 @@
 export {
   translateQueryToEnglish,
   translateTitlesToRussian,
-  summarizeArticleForLayperson
+  summarizeArticleForLayperson,
+  optimizeQueryForPubMed
 } from './ollama';
