@@ -14,7 +14,8 @@ console.log('OLLAMA_MODEL', OLLAMA_MODEL);
  */
 const checkOllamaConnection = async (): Promise<boolean> => {
   try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/tags`, {
+    // Используем прокси для обхода CORS
+    const response = await fetch('/api/ollama/api/tags', {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' },
     });
@@ -29,7 +30,8 @@ const checkOllamaConnection = async (): Promise<boolean> => {
  */
 const ollamaRequest = async (messages: Array<{role: string, content: string}>): Promise<string> => {
   try {
-    const response = await fetch(`${OLLAMA_BASE_URL}/api/chat`, {
+    // Используем прокси для обхода CORS
+    const response = await fetch('/api/ollama/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
