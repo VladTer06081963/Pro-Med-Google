@@ -13,16 +13,23 @@ export default defineConfig(({ mode }) => {
           '/api/ollama': {
             target: env.VITE_OLLAMA_BASE_URL || 'http://192.168.50.64:11434',
             changeOrigin: true,
+            secure: false,
             rewrite: (path) => path.replace(/^\/api\/ollama/, ''),
             configure: (proxy, options) => {
-              proxy.on('error', (err, req, res) => {
-                console.log('proxy error', err);
-              });
+              // Логи закомментированы для продакшена
+              // proxy.on('error', (err, req, res) => {
+              //   console.log('proxy error', err);
+              // });
               proxy.on('proxyReq', (proxyReq, req, res) => {
-                console.log('Sending Request to Ollama:', req.method, req.url);
+                // Удаляем origin header который может вызывать проблемы
+                proxyReq.removeHeader('origin');
+                proxyReq.removeHeader('referer');
               });
               proxy.on('proxyRes', (proxyRes, req, res) => {
-                console.log('Received Response from Ollama:', proxyRes.statusCode, req.url);
+                // Добавляем CORS headers
+                proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+                proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+                proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
               });
             },
           }

@@ -6,8 +6,9 @@
 // Ollama configuration
 const OLLAMA_BASE_URL = import.meta.env.VITE_OLLAMA_BASE_URL || 'http://192.168.50.64:11434';
 const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'gpt-oss:20b-cloud';
-console.log('OLLAMA_BASE_URL', OLLAMA_BASE_URL);
-console.log('OLLAMA_MODEL', OLLAMA_MODEL);
+// Логи закомментированы для продакшена
+// console.log('OLLAMA_BASE_URL', OLLAMA_BASE_URL);
+// console.log('OLLAMA_MODEL', OLLAMA_MODEL);
 
 /**
  * Check if Ollama is available
