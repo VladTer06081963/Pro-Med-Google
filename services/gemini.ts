@@ -106,3 +106,35 @@ export const summarizeArticleForLayperson = async (title: string, abstract: stri
     return "Произошла ошибка при генерации описания.";
   }
 };
+
+/**
+ * Optimizes a long query into concise PubMed-compatible search terms using Gemini.
+ */
+export const optimizeQueryForPubMed = async (longQuery: string): Promise<string> => {
+  if (!apiKey) return longQuery;
+
+  try {
+    const model = 'gemini-2.5-flash';
+    const prompt = `You are a medical research assistant. Your task is to optimize long, detailed queries into concise PubMed search terms. Focus on the core medical concepts, diseases, treatments, and key terms that would yield the best search results.
+    
+    Please optimize this medical query for PubMed search. Extract the key medical terms, diseases, treatments, and concepts. Make it concise but comprehensive.
+
+    Original query: "${longQuery}"
+
+    Rules:
+    1. Focus on medical keywords, diseases, treatments, symptoms, and research topics
+    2. Use PubMed-compatible syntax when appropriate (AND, OR, NOT)
+    3. Keep it under 200 characters if possible
+    4. Return ONLY the optimized search query, no explanations`;
+
+    const response = await ai.models.generateContent({
+      model,
+      contents: prompt,
+    });
+
+    return response.text?.trim() || longQuery;
+  } catch (error) {
+    console.error("Query optimization error:", error);
+    return longQuery;
+  }
+};

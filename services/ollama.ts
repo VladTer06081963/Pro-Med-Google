@@ -13,7 +13,7 @@ const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'gpt-oss:20b-cloud';
 /**
  * Check if Ollama is available
  */
-const checkOllamaConnection = async (): Promise<boolean> => {
+export const checkOllamaConnection = async (): Promise<boolean> => {
   try {
     // Используем прокси для обхода CORS
     const response = await fetch('/api/ollama/api/tags', {
