@@ -9,6 +9,7 @@ function App() {
   const [pubmedApiKey, setPubmedApiKey] = useState('');
   const [showSettings, setShowSettings] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedAIProvider, setSelectedAIProvider] = useState<'ollama' | 'gemini' | 'mistral'>('ollama');
   
   const [searchState, setSearchState] = useState<SearchState>({
     query: '',
@@ -27,6 +28,18 @@ function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('selectedAIProvider') as 'ollama' | 'gemini' | 'mistral' | null;
+    if (stored) {
+      setSelectedAIProvider(stored);
+    }
+  }, []);
+
+  const handleAIProviderChange = (provider: 'ollama' | 'gemini' | 'mistral') => {
+    setSelectedAIProvider(provider);
+    localStorage.setItem('selectedAIProvider', provider);
+  };
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -144,20 +157,61 @@ function App() {
                 placeholder="Введите ваш NCBI API Key"
                 className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
               />
-              <div className="mt-3 flex items-center gap-4">
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Количество результатов:
-                 </label>
-                 <select 
-                    value={searchState.count}
-                    onChange={(e) => setSearchState(prev => ({...prev, count: Number(e.target.value)}))}
-                    className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm"
-                 >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                 </select>
-              </div>
+               <div className="mt-3 flex items-center gap-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                     Количество результатов:
+                  </label>
+                  <select
+                     value={searchState.count}
+                     onChange={(e) => setSearchState(prev => ({...prev, count: Number(e.target.value)}))}
+                     className="px-2 py-1 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded text-sm"
+                  >
+                     <option value={5}>5</option>
+                     <option value={10}>10</option>
+                     <option value={20}>20</option>
+                  </select>
+               </div>
+               <div className="mt-4">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                     AI Провайдер
+                     <span className="text-gray-400 text-xs ml-2 font-normal">Выберите источник ИИ для переводов и анализа</span>
+                  </label>
+                  <div className="space-y-2">
+                     <label className="flex items-center">
+                        <input
+                           type="radio"
+                           name="aiProvider"
+                           value="ollama"
+                           checked={selectedAIProvider === 'ollama'}
+                           onChange={(e) => handleAIProviderChange(e.target.value as 'ollama')}
+                           className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Ollama (локальный, рекомендуется)</span>
+                     </label>
+                     <label className="flex items-center">
+                        <input
+                           type="radio"
+                           name="aiProvider"
+                           value="gemini"
+                           checked={selectedAIProvider === 'gemini'}
+                           onChange={(e) => handleAIProviderChange(e.target.value as 'gemini')}
+                           className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Gemini (Google AI)</span>
+                     </label>
+                     <label className="flex items-center">
+                        <input
+                           type="radio"
+                           name="aiProvider"
+                           value="mistral"
+                           checked={selectedAIProvider === 'mistral'}
+                           onChange={(e) => handleAIProviderChange(e.target.value as 'mistral')}
+                           className="mr-2 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm text-gray-700 dark:text-gray-300">Mistral (бесплатный)</span>
+                     </label>
+                  </div>
+               </div>
             </div>
           </div>
         )}

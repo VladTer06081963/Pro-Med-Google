@@ -99,30 +99,26 @@ export const translateTitlesToRussian = async (titles: string[]): Promise<string
 
     if (titles.length === 0) return titles;
 
-    const messages = [
-      {
-        role: 'system',
-        content: 'You are a helpful assistant that translates medical article titles from English to Russian. Return ONLY a JSON array of strings corresponding to the order of the input titles.'
-      },
-      {
-        role: 'user',
-        content: `Translate the following medical article titles from English to Russian. Return ONLY a JSON array of strings corresponding to the order of the input.\n\nInput: ${JSON.stringify(titles)}`
-      }
-    ];
+    // Translate titles one by one to avoid parsing issues
+    const translatedTitles: string[] = [];
 
-    const response = await ollamaRequest(messages);
-    const jsonText = response.trim();
+    for (const title of titles) {
+      const messages = [
+        {
+          role: 'system',
+          content: 'You are a helpful assistant that translates medical article titles from English to Russian. Return ONLY the Russian translation, no other text.'
+        },
+        {
+          role: 'user',
+          content: `Translate this medical article title from English to Russian. Return ONLY the translation:\n\n${title}`
+        }
+      ];
 
-    try {
-      const translatedTitles = JSON.parse(jsonText);
-      if (Array.isArray(translatedTitles) && translatedTitles.length === titles.length) {
-        return translatedTitles;
-      }
-    } catch (parseError) {
-      console.error('Failed to parse Ollama response as JSON:', parseError);
+      const response = await ollamaRequest(messages);
+      translatedTitles.push(response.trim() || title);
     }
 
-    return titles; // Fallback to original titles
+    return translatedTitles;
   } catch (error) {
     console.error("Title translation error:", error);
     return titles; // Fallback to original
